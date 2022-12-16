@@ -62,13 +62,349 @@ $.playerCustomizing = function(m){
 var PlayerCustomizing = function(content, m){
     // 전역적으로 사용하기 위한 변수
 	this.opt = $.extend({}, $.fn.playerCustomizing.default, m || {}); // 옵션
+
+    var that = this
+	, videoForm = this.videoUiCreate(content, m); // 비디오 UI 생성
 }
 // 프로토타입
 PlayerCustomizing.prototype = {
 	// 초기 작업
 	initAction : function(m){
         console.log("시작");
-    }
+    },
+    // video 생성
+	videoUiCreate : function(content, m){
+		// 타이틀 생성
+		$("<h1 />").addClass("py_title").text( this.opt.playList[this.playCount].title ).appendTo( $(content) );
+
+		// 비디오 생성
+		var $video = $("<video />", { "name" : "media", "autoplay" : true })
+			.append(
+				$("<source />")
+			);
+		$video.appendTo( $(content) );
+
+		// 컨트럴 박스 생성 여부
+		if( this.opt.controlUse ){
+			// 컨트럴 박스 전체 영역
+			var $controlBox = $("<div />").addClass("py_controlbox_wrap");
+
+			// 재생 상태바(모바일)
+			if( this.deviceVersionCheck() === "mobile" ){
+				// 재생 상태바 영역
+				var $playprogress = $("<div />").addClass("py_playprogress_control")
+					.append(
+						$("<div />").addClass("py_current_time").text("00:00")
+					)
+					.append(
+						$("<div />").addClass("py_progress_bar")
+							.append(
+								$("<div />").addClass("py_progress_bar_box")
+									.append(
+										$("<div />").addClass("py_play_progress")
+											.append(
+												$("<div />").addClass("py_tooltip")
+													.append(
+														$("<span />").addClass("py_tooltip_time").text("00:00")
+													)
+											)
+									)
+							)
+					)
+					.append(
+						$("<div />").addClass("py_duration_time").text("00:00")
+					)
+					.appendTo( $controlBox );
+			} else { // 재생 상태바(웹)
+				// 재생 상태바 영역
+				var $playprogress = $("<div />").addClass("py_playprogress_control")
+					.append(
+						$("<div />").addClass("py_progress_bar")
+							.append(
+								$("<div />").addClass("py_progress_bar_box")
+									.append(
+										$("<div />").addClass("py_play_progress")
+											.append(
+												$("<div />").addClass("py_tooltip")
+													.append(
+														$("<span />").addClass("py_tooltip_time").text("00:00")
+													)
+											)
+									)
+							)
+					)
+					.appendTo( $controlBox );
+			}
+
+			// 리스트 시간 썸네일이 있을경우
+			if( this.opt.playList[0].timeSumImg ){
+				$("<div />").addClass("py_tooltip")
+					.append(
+						$("<span />").addClass("py_tooltip_time").text("00:00")
+					).appendTo( $playprogress.find(".py_play_progress") );
+			}
+
+			// 재생, 정지 버튼
+			var $btnPlay = $("<button />", { type : "button" }).addClass("py_play_control py_play")
+				.append(
+					$("<span />").addClass("py_play_control_icon")
+				)
+				.append(
+					$("<span />").addClass("py_play_control_text")
+				);
+
+			// 일정부분 건너뛰기 기능
+			if( this.opt.overTimeUse ){
+				var $btnPrevMove = $("<button />", { type : "button" }).addClass("py_prev_control")
+					.append(
+						$("<span />").addClass("py_prev_control_icon")
+					)
+					.append(
+						$("<span />").addClass("py_prev_control_text").text( this.opt.overTimeUse )
+					);
+
+				var $btnNextMove = $("<button />", { type : "button" }).addClass("py_next_control")
+					.append(
+						$("<span />").addClass("py_next_control_icon")
+					)
+					.append(
+						$("<span />").addClass("py_next_control_text").text( this.opt.overTimeUse )
+					);
+			}
+
+			// 볼륨 기능
+			var $volumePanel = $("<div />").addClass("py_volume_panel")
+				.append(
+					$("<button />", { type : "button" }).addClass("py_mute_control")
+						.append(
+							$("<span />").addClass("py_mute_control_icon")
+						)
+						.append(
+							$("<span />").addClass("py_mute_control_text")
+						)
+				)
+				.append(
+					$("<div />").addClass("py_volume_bar")
+						.append(
+							$("<div />").addClass("py_volume_level")
+								.append(
+									$("<span />").addClass("py_volume_level_icon")
+								)
+						)
+				);
+
+			// 웹, 타블렛
+			if( this.deviceVersionCheck() !== "mobile" ){
+				// 재생시간 및 총시간
+				var $playTimeForm = $("<div />").addClass("py_time_panel")
+					.append(
+						$("<span />").addClass("py_current_time").text("00:00")
+					)
+					.append(" / ")
+					.append(
+						$("<span />").addClass("py_duration_time").text("00:00")
+					);
+			}
+
+			// 다음화 및 시리즈 목록 버튼 영역
+			if( this.opt.playList.length > 1 ){
+				// 다음화 버튼
+				var $btnNextLink = $("<button />").addClass("py_listNext_control")
+					.append(
+						$("<span />").addClass("py_listNext_control_icon")
+					)
+					.append(
+						$("<span />").addClass("py_listNext_control_text")
+					);
+
+				// 리스트 목록 버튼
+				var $btnSeries = $("<button />").addClass("py_listSeries_control")
+					.append(
+						$("<span />").addClass("py_listSeries_control_icon")
+					)
+					.append(
+						$("<span />").addClass("py_listSeries_control_text")
+					);
+
+				// 리스트 목록
+				var $seriesList = $("<div />").addClass("py_series_list")
+					.append(
+						$("<div />").addClass("py_series_list_in")
+							.append(
+								$("<h2 />").addClass("py_list_title")
+									.append(
+										$("<img />", { src : "./image/py_list_title.gif", alt : "목록보기" })
+									)
+							)
+							.append(
+								$("<div />").addClass("py_series_scroll")
+									.append(
+										$("<ul />")
+									)
+							)
+					);
+
+				for( var i=0; i<this.opt.playList.length; i++ ){
+					var $li = $("<li />")
+						.append(
+							$("<div />").addClass("unit")
+								.append(
+									$("<a />", { href : "#" })
+										.append(
+											$("<div />").addClass("sumnail")
+												.append(
+													$("<img />", { src : this.opt.playList[i].sumImg, alt : "" })
+												)
+										)
+										.append(
+											$("<div />").addClass("content")
+												.append(
+													$("<p />").addClass("tit").text( this.opt.playList[i].title )
+												)
+												.append(
+													$("<p />").addClass("counting")
+														.append(
+															$("<span />").addClass("current_time").text( this.timeCalculate(this.opt.playList[i].cTime) )
+														)
+														.append( " / " )
+														.append(
+															$("<span />").addClass("last_time").text( this.opt.playList[i].lTime )
+														)
+												)
+										)
+								)
+						)
+
+						// 모바일
+						if( this.deviceVersionCheck() === "mobile" ){
+							$li.find(".sumnail").append(
+								$("<span />").addClass("seekbar")
+									.append(
+										$("<span />")
+									)
+							)
+						} else { // 웹, 타블릿
+							$li.find(".content").append(
+								$("<span />").addClass("seekbar")
+									.append(
+										$("<span />")
+									)
+							)
+							$li.find(".tit").after( $li.find(".seekbar") );
+						}
+						$li.appendTo( $seriesList.find("ul") )
+				}
+
+				// 닫기 버튼
+				$seriesList.append(
+					$("<p />").addClass("close")
+						.append(
+							$("<a />", { href : "#" })
+								.append( "닫기" )
+						)
+				)
+
+				$seriesList.appendTo( $(content) );
+			}
+
+			// 전체화면 확대 기능
+			var $btnFullscreen = $("<button />").addClass("py_fullscreen_control")
+				.append(
+					$("<span />").addClass("py_fullscreen_control_icon")
+				)
+				.append(
+					$("<span />").addClass("py_fullscreen_control_text")
+				);
+
+			// 모바일 체크
+			if( this.deviceVersionCheck() === "mobile" ){
+				// 기능별 영역
+				var $listMControll = $("<div />").addClass("py_list_m_control");
+				$listMControll.appendTo( $controlBox );
+
+				// 재생, 정지 버튼
+				$btnPlay.appendTo( $(content) );
+
+				// 일정부분 건너뛰기 기능
+				if( this.opt.overTimeUse ){
+					$(content).append(
+						$btnPrevMove,
+						$btnNextMove
+					);
+				}
+
+				// 볼륨
+				$volumePanel.appendTo( $listMControll );
+
+				// 다음화 및 시리즈 목록 버튼 영역
+				if( this.opt.playList.length > 1 ){
+					// 다음화 버튼
+					$btnNextLink.appendTo( $listMControll );
+
+					// 리스트 목록 버튼
+					$btnSeries.appendTo( $listMControll );
+				}
+
+				// 전체화면 확대 기능
+				$btnFullscreen.appendTo( $listMControll );
+
+				$controlBox.appendTo( $(content) );
+			} else {
+				// 재생 레이어바
+				$("<div />").addClass("py_btn_playing")
+					.append(
+						$("<a />", { href : "#"})
+					)
+					.appendTo( $(content) );
+
+				// 기능별 영역
+				var $funcControll = $("<div />").addClass("py_func_control"); //py_listseries_wrap
+				var $listControll = $("<div />").addClass("py_list_control"); //py_listseries_wrap
+				$funcControll.appendTo( $controlBox );
+				$listControll.appendTo( $controlBox );
+
+				// 재생, 정지 버튼
+				$btnPlay.appendTo( $funcControll );
+
+				// 일정부분 건너뛰기 기능
+				if( this.opt.overTimeUse ){
+					// 이전버튼
+					$btnPrevMove.appendTo( $funcControll );
+					// 다음버튼
+					$btnNextMove.appendTo( $funcControll );
+				}
+
+				// 볼륨 기능
+				$volumePanel.appendTo( $funcControll );
+
+				// 재생시간 및 총시간
+				$playTimeForm.appendTo( $funcControll );
+
+				// 다음화 및 시리즈 목록 버튼 영역
+				if( this.opt.playList.length > 1 ){
+					// 다음화 버튼
+					$btnNextLink.appendTo( $listControll );
+
+					// 리스트 목록 버튼
+					$btnSeries.appendTo( $listControll );
+				}
+
+				// 전체화면 확대 기능
+				$btnFullscreen.appendTo( $listControll );
+
+				$controlBox.appendTo( $(content) );
+			}
+		}
+
+		// 닫기 버튼
+		$("<p />").addClass("py_btn_close")
+			.append(
+				$("<a />", { href : "#" }).text("닫기")
+			)
+			.appendTo( $(content) );
+
+		return $video[0];
+	}
 }
 // 옵션
 $.fn.playerCustomizing.default = {

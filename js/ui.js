@@ -64,7 +64,52 @@ var PlayerCustomizing = function(content, m){
 	this.opt = $.extend({}, $.fn.playerCustomizing.default, m || {}); // 옵션
 
     var that = this
-	, videoForm = this.videoUiCreate(content, m); // 비디오 UI 생성
+	, videoForm = this.videoUiCreate(content, m) // 비디오 UI 생성
+    , videoLoading = this.loadingUiCreate({ cont : content }); // 로딩바 생성
+
+    // 전역적으로 사용하기 위한 변수(버튼 요소)
+	this.videoForm = videoForm; // 생성된 video
+    this.content = $(content); // 전체 영역
+
+    // 로딩 시작
+	$(this.videoForm).off("seeking");
+	$(this.videoForm).on("seeking", function(){
+		videoLoading.addClass("py_loading_spinner_active").show();
+	});
+
+	// 로딩 끝
+	$(this.videoForm).off("seeked");
+	$(this.videoForm).on("seeked", function(){
+		videoLoading.removeClass("py_loading_spinner_active").hide();
+	});
+
+    // video 초기 로딩이 완료된 후
+	$(this.videoForm).off("loadedmetadata");
+	$(this.videoForm).on("loadedmetadata", function(){
+		// 타이틀 적용
+		that.title.text( that.opt.playList[that.playCount].title );
+
+		// 비디오 로드후 초기작업
+		that.initAction({ wrap : content });
+	});
+
+    // video 재생중일때
+	$(this.videoForm).off("playing");
+	$(this.videoForm).on("playing", function(){
+		$(content).addClass("py_playing");
+	});
+
+    // video 재생시간이 변화가 있을경우 실행
+	$(this.videoForm).off("timeupdate");
+	$(this.videoForm).on("timeupdate", function(){
+		
+	});
+
+    // video 재생이 완료됐을경우
+	$(this.videoForm).off("ended");
+	$(this.videoForm).on("ended", function(){
+		
+	});
 }
 // 프로토타입
 PlayerCustomizing.prototype = {
@@ -404,6 +449,13 @@ PlayerCustomizing.prototype = {
 			.appendTo( $(content) );
 
 		return $video[0];
+	},
+    // 데이터 로딩바
+	loadingUiCreate : function(m){
+		var $spinner = $("<div />").addClass("py_loading_spinner")
+			.appendTo( $(m.cont) );
+
+		return $spinner;
 	}
 }
 // 옵션

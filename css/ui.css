@@ -1,0 +1,1081 @@
+/* 기본  CSS */
+* {
+	margin:0;
+	padding:0;
+	-ms-user-select:none;
+	-moz-user-select:-moz-none;
+	-webkit-user-select:none;
+	-khtml-user-select:none;
+	user-select:none;
+}
+
+html, body {height:100%;}
+body {background:#000;}
+
+/* 플레이어 */
+.player_content,
+video {
+	overflow:hidden;
+	width:100%;
+	height:100%;
+}
+.player_content {
+	/* 아이폰에서 상하로 드래그 기능 삭제 */
+	-webkit-overflow-scrolling: touch;
+}
+/* 타이틀 */
+.py_title {
+	overflow:hidden;
+	position:fixed;
+	left:0;
+	right:0;
+	top:0;
+	padding:40px 140px 50px 45px;
+	font-size:26px;
+	color:#fff;
+	white-space:nowrap;
+	text-overflow:ellipsis;
+	background:linear-gradient(rgba(0, 0, 0, 0.5), transparent);
+	transition:all 1s;
+}
+/* 닫기 버튼 */
+.py_btn_close {
+	position:fixed;
+	right:50px;
+	top:40px;
+	transition:all 1s;
+}
+.py_btn_close a {
+	display:inline-block;
+	position:relative;
+	width:28px;
+	height:28px;
+	padding:10px;
+	text-indent:-9999px;
+}
+.py_btn_close a:before,
+.py_btn_close a:after {
+	content:"";
+	position:absolute;
+	left:5px;
+	top:22px;
+	width:37px;
+	height:2px;
+	background:#fff;
+}
+.py_btn_close a:before {
+	transform:rotate(45deg);
+}
+.py_btn_close a:after {
+	transform:rotate(-45deg);
+}
+/* 플레이 레이어 버튼 */
+.py_btn_playing {
+	position:fixed;
+	left:50%;
+	top:50%;
+	visibility:visible;
+	transform:translate(-50%, -50%);
+	transition:all 0.2s;
+}
+.py_btn_playing a {
+	display:block;
+	width:134px;
+	height:134px;
+	background:url("../image/icon_play.png") 0 0 no-repeat;
+	transition:all 0.3s;
+}
+.py_btn_playing_hide {
+	opacity:0;
+	visibility:hidden;
+}
+.py_btn_playing_active a {
+	transform:scale(1.2);
+}
+/* 플레이 버튼 영역 */
+.py_controlbox_wrap .py_user_inactive {}
+.py_controlbox_wrap {
+	display:flex;
+	flex-wrap:wrap;
+	position:absolute;
+	left:0;
+	bottom:0;
+	width:100%;
+	height:107px;
+	background:linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.5));
+	transition:all 1s;
+}
+.py_controlbox_wrap button {
+	border:none;
+	background:transparent;
+	cursor:pointer;
+	transition:all 0.5s;
+}
+.py_controlbox_wrap button:hover {
+	transform:scale(1.1);
+}
+.py_play_control {}
+.py_play_control .py_play_control_icon {
+	display:block;
+	width:57px;
+	height:70px;
+	background-position:center center;
+	background-repeat:no-repeat;
+}
+/* 재생버튼 */
+.py_controlbox_wrap .py_play_control .py_play_control_icon {
+	background-image:url(../image/btn_play_off.png);
+}
+.py_controlbox_wrap .py_play_control:hover .py_play_control_icon {
+	background-image:url(../image/btn_play_on.png);
+}
+.py_controlbox_wrap .py_play_control .py_play_control_text {
+	opacity:0;
+	visibility:hidden;
+}
+/* 일시정지 버튼 */
+.py_playing .py_controlbox_wrap .py_play_control .py_play_control_icon {
+	background-image:url(../image/btn_paused_off.png);
+}
+.py_playing .py_controlbox_wrap .py_play_control:hover .py_play_control_icon {
+	background-image:url(../image/btn_paused_on.png);
+}
+/* 10초 이전, 다음버튼 */
+.py_prev_control,
+.py_next_control {
+	position:relative;
+	border:none;
+	background:none;
+}
+.py_prev_control .py_prev_control_icon,
+.py_next_control .py_next_control_icon {
+	display:block;
+	width:71px;
+	height:70px;
+	background-position:50% 16px;
+	background-repeat:no-repeat;
+	animation-timing-function:ease;
+	animation-duration:0.3s;
+}
+.py_prev_control .py_prev_control_icon {
+	background-image:url(../image/btn_prev_off.png);
+}
+.py_prev_control:hover .py_prev_control_icon {
+	background-image:url(../image/btn_prev_on.png);
+}
+.py_next_control .py_next_control_icon {
+	background-image:url(../image/btn_next_off.png);
+}
+.py_next_control:hover .py_next_control_icon {
+	background-image:url(../image/btn_next_on.png);
+}
+.py_prev_control .py_prev_control_text,
+.py_next_control .py_next_control_text {
+	display:flex;
+	justify-content:center;
+	align-items:center;
+	position:absolute;
+	left:0;
+	top:7px;
+	width:100%;
+	margin-top:22px;
+	padding-right:2px;
+	font-size:14px;
+	color:#ececec;
+	box-sizing:border-box;
+}
+.py_prev_control:hover .py_prev_control_text,
+.py_next_control:hover .py_next_control_text {
+	color:#fff;
+}
+.py_device_horizontal .py_prev_control,
+.py_device_horizontal .py_next_control {
+	margin-top:0;
+}
+.py_device_horizontal .py_prev_control {}
+.py_device_horizontal .py_next_control {}
+.py_prev_control_active .py_prev_control_icon {
+	animation-name:prev_animate;
+}
+/* 모션 프레임(이전버튼) */
+@keyframes prev_animate {
+	0% {transform:rotate(0);}
+	50% {transform:rotate(-60deg);}
+	100% {transform:rotate(0);}
+}
+.py_next_control_active .py_next_control_icon {
+	animation-name:next_animate;
+}
+/* 모션 프레임(다음버튼) */
+@keyframes next_animate {
+	0% {transform:rotate(0);}
+	50% {transform:rotate(60deg);}
+	100% {transform:rotate(0);}
+}
+
+/* 볼륨영역 */
+.py_controlbox_wrap .py_volume_panel {
+	position:relative;
+	width:40px;
+	padding:20px 20px 0;
+	transition:all 0.5s;
+}
+.py_controlbox_wrap .py_volume_panel button {
+	width:38px;
+	height:30px;
+}
+.py_controlbox_wrap .py_volume_panel .py_mute_control_icon {
+	display:block;
+	width:100%;
+	height:100%;
+	background-position:0 0;
+	background-repeat:no-repeat;
+}
+.py_controlbox_wrap .py_mute_control_process0 .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process1_off.png");
+}
+.py_controlbox_wrap .py_mute_control_process1 .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process2_off.png");
+}
+.py_controlbox_wrap .py_mute_control_process2 .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process3_off.png");
+}
+.py_controlbox_wrap .py_mute_control_process3 .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process4_off.png");
+}
+.py_controlbox_wrap .py_mute_control_process0:hover .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process1_on.png");
+}
+.py_controlbox_wrap .py_mute_control_process1:hover .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process2_on.png");
+}
+.py_controlbox_wrap .py_mute_control_process2:hover .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process3_on.png");
+}
+.py_controlbox_wrap .py_mute_control_process3:hover .py_mute_control_icon {
+	background-image:url("../image/icon_volume_process4_on.png");
+}
+.py_controlbox_wrap .py_volume_bar {
+	position:absolute;
+	left:73px;
+	top:21px;
+	width:96px;
+	height:30px;
+	opacity:0;
+	transition:all 1s;
+}
+.py_controlbox_wrap .py_volume_bar .py_volume_level {
+	width:100%;
+	height:4px;
+	margin-top:12px;
+	background:#92918d;
+}
+.py_controlbox_wrap .py_volume_bar .py_volume_level_icon {
+	display:block;
+	position:relative;
+	width:0;
+	height:100%;
+	background:#00baff;
+}
+.py_controlbox_wrap .py_volume_bar .py_volume_level_icon:after {
+	content:"";
+	position:absolute;
+	right:-6px;
+	top:-4px;
+	width:12px;
+	height:12px;
+	border-radius:50%;
+	background:#00baff;
+}
+.py_controlbox_wrap .py_volume_panel_enter {
+	width:150px;
+}
+.py_controlbox_wrap .py_volume_panel_enter .py_volume_bar {
+	width:96px;
+	opacity:1;
+}
+/* 재생시간 및 총 시간 */
+.py_controlbox_wrap .py_time_panel {
+	display:flex;
+    align-items:center;
+    color:#fff;
+}
+.py_controlbox_wrap .py_time_panel span {
+	margin:0 5px;
+}
+.py_playprogress_control {
+	display:flex;
+	align-items:center;
+	width:100%;
+	height:36px;
+	padding:0 42px 0 43px;
+	box-sizing:border-box;
+}
+.py_playprogress_control .py_current_time,
+.py_playprogress_control .py_progress_bar,
+.py_playprogress_control .py_duration_time {
+	height:100%;
+	font-size:18px;
+}
+.py_playprogress_control .py_current_time {
+	display:flex;
+	justify-content:center;
+	align-items:center;
+	width:75px;
+	margin-right:10px;
+	color:#06b2f2;
+}
+/* 플레이 재생바 */
+.py_playprogress_control .py_progress_bar {
+	display:flex;
+	align-items:center;
+	flex:1;
+}
+.py_playprogress_control .py_progress_bar .py_progress_bar_box {
+	flex:1;
+	position:relative;
+	height:3px;
+	background-color:rgba(115, 133, 159, 0.5);
+	transition:all 0.3s;
+}
+.py_playprogress_control .py_progress_bar .py_play_progress {
+	position:absolute;
+	left:0;
+	top:0;
+	width:0;
+	height:100%;
+	background:#00baff;
+}
+.py_playprogress_control .py_progress_bar .py_play_progress:after {
+	content:"";
+	position:absolute;
+	right:-9px;
+	top:-7px;
+	width:20px;
+	height:20px;
+	border-radius:50%;
+	background:#00baff;
+	opacity:0;
+	visibility:hidden;
+	transition:all 0.3s;
+}
+/* 재생바 활성화 이미지 */
+.py_playprogress_control .py_progress_bar .py_play_progress .py_tooltip {
+	display:none;
+	overflow:hidden;
+	position:absolute;
+	left:-82px;
+	bottom:30px;
+	width:160px;
+	height:90px;
+	border:2px solid #2a292a;
+}
+.py_playprogress_control .py_progress_bar .py_play_progress .py_tooltip .py_tooltip_time {
+	position:absolute;
+	left:0;
+	bottom:0;
+	width:100%;
+	padding:5px 10px;
+	font-size:12px;
+	color:#fff;
+	text-align:center;
+	background:rgba(42, 41, 41, 0.6);
+	box-sizing:border-box;
+}
+.py_playprogress_control .py_progress_bar .py_play_progress .py_tooltip img {
+	width:1600px;
+	vertical-align:top;
+}
+.py_playprogress_control .py_progress_bar .py_play_progress .py_tooltip_active {
+	display:flex;
+	flex-wrap:wrap;
+}
+.py_playprogress_control .py_progress_bar .py_play_progress .py_tooltip_active .py_tooltip_time {
+	margin-top:-26px;
+}
+.py_playprogress_control .py_progress_bar_active .py_progress_bar_box {
+	height:6px;
+}
+.py_playprogress_control .py_progress_bar_active .py_play_progress:after {
+	opacity:1;
+	visibility:visible;;
+}
+.py_playprogress_control .py_duration_time {
+	display:flex;
+	justify-content:center;
+	align-items:center;
+	width:75px;
+	margin-left:10px;
+	color:#e1e1e1;
+}
+.py_playprogress_control .py_progress_blank {
+	position:absolute;
+	left:0;
+	top:0;
+	width:100%;
+	height:34%;
+}
+/* 리스트목록 및 전체보기버튼 등등 */
+.py_controlbox_wrap .py_func_control,
+.py_controlbox_wrap .py_list_control {
+	display:flex;
+	flex:1;
+	overflow:hidden;
+	height:70px;
+}
+.py_controlbox_wrap .py_func_control {
+	padding-left:33px;
+}
+.py_controlbox_wrap .py_list_control {
+	justify-content:flex-end;
+	padding-right:33px;
+}
+.py_controlbox_wrap .py_listNext_control,
+.py_controlbox_wrap .py_listSeries_control,
+.py_controlbox_wrap .py_fullscreen_control {
+	margin:0 5px;
+	padding:15px;
+}
+/* 다음화 버튼 */
+.py_controlbox_wrap .py_listNext_control .py_listNext_control_icon {
+	display:block;
+	width:27px;
+	height:26px;
+	background:url("../image/btn_nextlist_off.png") 0 0 no-repeat;
+}
+.py_controlbox_wrap .py_listNext_control:hover .py_listNext_control_icon {
+	background:url("../image/btn_nextlist_on.png") 0 0 no-repeat;
+}
+/* 리스트목록 버튼 */
+.py_controlbox_wrap .py_listSeries_control .py_listSeries_control_icon {
+	display:block;
+	width:37px;
+	height:28px;
+	background:url("../image/btn_series_off.png") 0 0 no-repeat;
+}
+.py_controlbox_wrap .py_listSeries_control:hover .py_listSeries_control_icon {
+	background:url("../image/btn_series_on.png") 0 0 no-repeat;
+}
+/* 풀사이즈 버튼 */
+.py_controlbox_wrap .py_fullscreen_control .py_fullscreen_control_icon {
+	display:block;
+	width:30px;
+	height:28px;
+	background:url("../image/btn_full_off.png") 0 0 no-repeat;
+}
+.py_controlbox_wrap .py_fullscreen_control:hover .py_fullscreen_control_icon {
+	background:url("../image/btn_full_on.png") 0 0 no-repeat;
+}
+.py_controlbox_wrap .py_fullscreen_control .py_fullscreen_control_text {
+	opacity:0;
+	visibility:hidden;
+}
+.py_fullsize_active .py_controlbox_wrap .py_fullscreen_control .py_fullscreen_control_icon {
+	background-image:url(../image/btn_reduction_off.png);
+}
+.py_fullsize_active .py_controlbox_wrap .py_fullscreen_control:hover .py_fullscreen_control_icon {
+	background-image:url(../image/btn_reduction_on.png);
+}
+/* player 컨트롤 활성화 */
+.py_user_active .py_title,
+.py_user_active .py_btn_close,
+.py_user_active .py_controlbox_wrap {
+	opacity:0;
+	visibility:hidden;
+}
+/* 리스트 목록 레이어 */
+.py_series_list {
+	position:fixed;
+	right:-485px;
+	top:0;
+	width:485px;
+	height:100%;
+	background:#2c2c2c;
+	z-index:999;
+	transition:all 0.5s;
+}
+.py_series_list_active {
+	right:0;
+}
+.py_series_list_in {
+	height:100%;
+	padding:43px 45px 60px;
+	box-sizing:border-box;
+}
+.py_series_list_in .py_list_title {
+    height:50px;
+	font-size:12px;
+}
+.py_series_list_in .py_list_title img {
+	vertical-align:top;
+}
+.py_series_list .py_series_scroll {
+	overflow:auto;
+	width:100%;
+	height:583px;
+}
+.py_series_list .py_series_scroll::-webkit-scrollbar {
+	width: 10px;
+}
+.py_series_list .py_series_scroll::-webkit-scrollbar-track {
+	background: #1d1d1d;
+}
+.py_series_list .py_series_scroll::-webkit-scrollbar-thumb {
+	background: #3a3a3a;
+}
+.py_series_list .py_series_scroll::-webkit-scrollbar-thumb:hover {
+	background: #555;
+}
+.py_series_list .py_series_scroll ul {
+	padding-right:30px;
+}
+.py_series_list .py_series_scroll ul li {
+	margin:25px 0 0;
+}
+.py_series_list .py_series_scroll ul li:first-child {
+	margin-top:0;
+}
+.py_series_list .py_series_scroll .unit a {
+	display:flex;
+	position:relative;
+	text-decoration:none;
+}
+.py_series_list .py_series_scroll .unit a .sumnail {
+	position:relative;
+	width:160px;
+	margin-right:15px;
+}
+.py_series_list .py_series_scroll .unit a .sumnail img {
+	width:160px;
+	vertical-align:top;
+}
+.py_series_list .py_series_scroll .unit a .sumnail .seekbar {
+	display:block;
+	overflow:hidden;
+	position:relative;
+	width:calc(100% - 2px);
+	height:3px;
+	margin:-3px 1px 0;
+	background:#505050;
+	box-sizing:border-box;
+	z-index:2;
+}
+.py_series_list .py_series_scroll .unit a .sumnail .seekbar span {
+	position:absolute;
+	left:0;
+	top:0;
+	height:3px;
+	background:#00baff;
+}
+.py_series_list .py_series_scroll .unit a .content {
+	flex:1;
+	position:relative;
+}
+.py_series_list .py_series_scroll .unit a .content .tit {
+	display:-webkit-box;
+	-webkit-line-clamp:2;
+	-webkit-box-orient:vertical;
+	overflow:hidden;
+	font-size:14px;
+	line-height:21px;
+	color:#e6e6e6;
+	text-decoration:none;
+	word-break:break-all;
+	text-overflow:ellipsis;
+}
+.py_series_list .py_series_scroll .unit a .content .seekbar {
+	position:absolute;
+	left:0;
+	bottom:25px;
+	width:100%;
+	height:3px;
+	background:#505050;
+	z-index:100;
+}
+.py_series_list .py_series_scroll .unit a .content .seekbar span {
+	display:block;
+	width:0;
+	height:100%;
+	background:#00baff;
+}
+.py_series_list .py_series_scroll .unit a .content .counting {
+	position:absolute;
+	left:0;
+	bottom:5px;
+	margin-top:13px;
+	font-size:11px;
+	font-family:Arial;
+	color:#888888;
+	text-decoration:none;
+	z-index:100;
+}
+.py_series_list .py_series_scroll li.active .unit a .sumnail:before {
+	content:"";
+	position:absolute;
+	left:0;
+	top:0;
+	width:100%;
+	height:100%;
+	border:1px solid #959595;
+	background:rgba(0, 0, 0, 0.5);
+	box-sizing:border-box;
+}
+.py_series_list .py_series_scroll li.active .unit a .sumnail:after {
+	content:"";
+	position:absolute;
+	left:50%;
+	top:50%;
+	width:0;
+	height:0;
+	margin:-15px 0 0 -12px;
+	border-style:solid;
+	border-width:15px 0 15px 25px;
+	border-color:transparent transparent transparent #fff;
+}
+.py_series_list .py_series_scroll li.active .unit a .content .counting .current_time {
+	color:#00baff;
+}
+.py_series_list .close {
+	position:absolute;
+	right:36px;
+	top:28px;
+}
+.py_series_list .close a {
+	display:block;
+	width:40px;
+	height:40px;
+	padding:5px;
+	text-indent:-9999px;
+	background:none;
+}
+.py_series_list .close a:before,
+.py_series_list .close a:after {
+	content:"";
+	position:absolute;
+	left:9px;
+	top:24px;
+	width:32px;
+	height:2px;
+	background:#969696;
+}
+.py_series_list .close a:before {
+	transform:rotate(-45deg);
+}
+.py_series_list .close a:after {
+	transform:rotate(45deg);
+}
+.py_layer {
+	display:none;
+	position:absolute;
+	left:50%;
+	top:0;
+	width:420px;
+	transform:translateX(-50%);
+}
+.py_layer_in {
+	width:100%;
+	padding:40px 30px;
+	border:2px solid #259ded;
+	background:#fff;
+	box-sizing:border-box;
+}
+.py_layer .content {
+	padding:0 10px;
+	font-size:16px;
+	line-height:18px;
+	color:#333;
+}
+.py_layer .button {
+	margin-top:25px;
+	padding-top:25px;
+	text-align:center;
+	border-top:1px solid #ccc;
+}
+.py_layer .button button {
+	margin:0 5px;
+	padding:10px 20px;
+	font-weight:bold;
+	font-size:12px;
+	color:#333;
+	border:1px solid #ccc;
+	background:#fff;
+}
+.py_layer .button .btn_confirm {
+	color:#5f9ec7;
+}
+.py_layer .button .btn_cancel {}
+/* 볼륨 조절바 */
+.volume_layer {
+	position:fixed;
+	left:10px;
+	top:50%;
+	width:5px;
+	height:150px;
+	margin-top:-75px;
+	border-radius:3px;
+	background:#666;
+	opacity:0;
+	animation-timing-function:ease;
+	animation-duration:0.5s;
+}
+.volume_layer span {
+	position:absolute;
+	left:0;
+	bottom:0;
+	width:100%;
+	border-radius:3px;
+	background:#eee;
+}
+.volume_layer_active {
+	opacity:1;
+	animation-name:volume_display;
+}
+.volume_layer_disable {
+	opacity:0;
+	animation-name:volume_disable;
+}
+/* 모션 프레임 */
+@keyframes volume_display {
+	0% {opacity:0;}
+	100% {opacity:1;}
+}
+@keyframes volume_disable {
+	0% {opacity:1;}
+	100% {opacity:0;}
+}
+
+/* 광고배너 레이어 */
+.py_banner_layer {
+	position:absolute;
+	right:50px;
+	bottom:135px;
+	padding:9px 15px;
+	font-weight:bold;
+	font-size:16px;
+	color:#fff;
+	border:1px solid #fff;
+}
+.py_banner_layer .py_count {
+	font-size:17px;
+	color:#fc0;
+	font-family:Tahoma;
+}
+.py_banner_layer_active {
+	padding:0;
+}
+.py_banner_layer_active button {
+	padding:9px 27px 9px 15px;
+	font-weight:bold;
+	font-size:16px;
+	color:#fff;
+	border:none;
+	background:transparent;
+	cursor:pointer;
+}
+.py_banner_layer_active button:before,
+.py_banner_layer_active button:after {
+	content:"";
+	position:absolute;
+	right:10px;
+	top:17px;
+	width:10px;
+	height:2px;
+	background:#fff;
+}
+.py_banner_layer_active button:before {
+	transform:rotate(45deg);
+}
+.py_banner_layer_active button:after {
+	top:23px;
+	transform:rotate(-45deg);
+}
+
+/* 로딩바 */
+.py_loading_spinner {
+	display:none;
+	position:absolute;
+	left:50%;
+	top:50%;
+	width:84px;
+	height:84px;
+	margin:-42px 0 0 -42px;
+}
+.py_loading_spinner:before,
+.py_loading_spinner:after {
+	content:"";
+	position:absolute;
+	left:0;
+	top:0;
+	width:100%;
+	height:100%;
+}
+.py_loading_spinner:before {
+	background:url(../image/loadingbar_bg.png) 0 0 no-repeat;
+}
+.py_loading_spinner:after {
+	background:url(../image/loadingbar.png) 0 0 no-repeat;
+}
+.py_loading_spinner_active:after {
+	animation-name:loading_spinner;
+	animation-duration:1s;
+	animation-iteration-count:infinite;
+}
+@keyframes loading_spinner {
+	0% { transform:rotate(0); }
+	100% { transform:rotate(360deg); }
+}
+
+/* [Mobile] */
+@media (max-width:800px){
+	.py_title {
+		padding:20px 50px 20px 20px;
+		font-size:13px;
+	}
+	.py_btn_close {
+		top:16px;
+		right:20px;
+	}
+	.py_btn_close a {
+		width:15px;
+		height:15px;
+		padding:5px;
+	}
+	.py_btn_close a:before,
+	.py_btn_close a:after {
+		left:5px;
+		top:12px;
+		width:16px;
+		height:2px;
+	}
+	/* 플레이 레이어 버튼 */
+	.py_btn_playing {
+		display:none;
+	}
+	.py_play_control {
+		position:fixed;
+		left:50%;
+		top:50%;
+		border:none;
+		background:transparent;
+		transform:translate(-50%, -50%);
+		transition:all 1s;
+	}
+	.py_play_control .py_play_control_icon {
+		display:block;
+		width:40px;
+		height:46px;
+		background-position:center center;
+		background-repeat:no-repeat;
+		background-size:cover;
+	}
+	.py_playing .py_play_control .py_play_control_icon {
+		background-image:url(../image/btn_mobile_paused.png);
+	}
+	.py_play_control .py_play_control_icon {
+		background-image:url(../image/btn_mobile_play.png);
+	}
+	.py_play_control .py_play_control_text {
+		opacity:0;
+		visibility:hidden;
+	}
+	.py_prev_control,
+	.py_next_control {
+		position:fixed;
+		top:50%;
+		transition:all 1s;
+	}
+	.py_prev_control {
+		left:20%;
+		transform:translate(-50%, -50%);
+	}
+	.py_next_control {
+		right:20%;
+		transform:translate(50%, -50%);
+	}
+	.py_prev_control .py_prev_control_icon,
+	.py_next_control .py_next_control_icon {
+		width:50px;
+		height:50px;
+		background-position:50% 4px;
+	}
+	.py_prev_control .py_prev_control_icon {
+		background-image:url(../image/btn_prev.png);
+	}
+	.py_next_control .py_next_control_icon {
+		background-image:url(../image/btn_next.png);
+	}
+	.py_prev_control .py_prev_control_text,
+	.py_next_control .py_next_control_text {
+		margin-top:10px;
+	}
+	/* 재생, 10초 이전, 10초 다음 비활성화 */
+	.py_user_active .py_play_control,
+	.py_user_active .py_prev_control,
+	.py_user_active .py_next_control {
+		opacity: 0;
+    	visibility: hidden;
+	}
+
+	/* 광고배너 레이어 */
+	.py_banner_layer {
+		right:20px;
+		bottom:110px;
+		font-size:13px;
+	}
+	.py_banner_layer .py_count {
+		margin-right:2px;
+		font-size:15px;
+	}
+	.py_banner_layer_active button {
+		font-size:14px;
+	}
+
+	/* 프로그래스바 */
+	.py_playprogress_control {
+		padding:0 20px;
+	}
+	.py_playprogress_control .py_current_time,
+	.py_playprogress_control .py_duration_time {
+		width:45px;
+		font-size:12px;
+	}
+	.py_playprogress_control .py_current_time {
+		justify-content:flex-start;
+	}
+	.py_playprogress_control .py_duration_time {
+		justify-content:flex-end;
+	}
+	.py_playprogress_control .py_progress_bar {}
+	.py_playprogress_control .py_progress_bar .py_progress_bar_box {
+		height:3px;
+	}
+	.py_playprogress_control .py_progress_bar .py_play_progress {}
+	.py_playprogress_control .py_progress_bar .py_play_progress:after {
+		right:-8px;
+		top:-6px;
+		width:15px;
+		height:15px;
+	}
+
+	/* 컨트롤 박스*/
+	.py_controlbox_wrap .py_list_m_control {
+		display:flex;
+		justify-content:center;
+		overflow:hidden;
+		position:relative;
+		width:100%;
+		height:70px;
+	}
+	.py_controlbox_wrap .py_volume_panel {
+		display:none;
+	}
+	.py_controlbox_wrap .py_listNext_control,
+	.py_controlbox_wrap .py_listSeries_control,
+	.py_controlbox_wrap .py_fullscreen_control {
+		height:55px;
+	}
+	.py_controlbox_wrap .py_fullscreen_control {
+		position:absolute;
+		right:0;
+		top:0;
+	}
+	.py_controlbox_wrap .py_listNext_control .py_listNext_control_icon {
+		width:14px;
+		height:13px;
+		background-size:cover;
+	}
+	.py_controlbox_wrap .py_listSeries_control .py_listSeries_control_icon {
+		width:19px;
+		height:15px;
+		background-size:contain;
+	}
+	/* 목록보기 레이어 */
+	.py_series_list {
+		width:100%;
+		right:-100%;
+	}
+	.py_series_list_active {
+		right:0;
+	}
+	.py_series_list_in {
+		padding:55px 25px 40px;
+	}
+	.py_series_list_in .py_list_title {
+		display:none;
+	}
+	.py_series_list .py_series_scroll {
+		height:720px;
+		margin-top:0;
+	}
+	.py_series_list .py_series_scroll ul {
+		padding-right:15px;
+	}
+	.py_series_list .py_series_scroll .unit a .sumnail {
+		width:112px;
+	}
+	.py_series_list .py_series_scroll .unit a .sumnail img {
+		width:100%;
+	}
+	.py_series_list .py_series_scroll .unit a .sumnail .seekbar {
+		position:absolute;
+		left:0;
+		bottom:0;
+		width:100%;
+		margin:0;
+	}
+	.py_series_list .py_series_scroll li.active .unit a .sumnail:after {
+		margin:0;
+		border-width:10px 0 10px 17px;
+		transform:translate(-50%, -50%);
+	}
+	.py_series_list .py_series_scroll .unit a .content .tit {
+		font-size:13px;
+		color:#e6e6e6;
+	}
+	.py_series_list .py_series_scroll .unit a .content .counting {
+		bottom:3px;
+	}
+	.py_series_list .close {
+		right:5px;
+		top:5px;
+	}
+	.py_series_list .close a:before,
+	.py_series_list .close a:after {
+		left:16px;
+		top:24px;
+		width:19px;
+	}
+	/* 전체보기 */
+	.py_controlbox_wrap .py_fullscreen_control .py_fullscreen_control_icon {
+		width:17px;
+		height:15px;
+		background-size:contain;
+	}
+}
+
+/* 네이티브 컨트롤 숨김 */
+::-webkit-media-controls {
+    display:none !important;
+}
+video::-webkit-media-controls {
+    display:none !important;
+}
+video::-webkit-media-controls-enclosure {
+    display:none !important;
+}
+video::-webkit-media-controls-fullscreen-button {
+    display:none !important;
+}
+*::-webkit-media-controls-panel {
+    /*display: none!important;
+    -webkit-appearance: none;*/
+}
+*::--webkit-media-controls-play-button {
+    display: none!important;
+    -webkit-appearance: none;
+}
+
+*::-webkit-media-controls-start-playback-button {
+    display: none!important;
+    -webkit-appearance: none;
+}

@@ -62,6 +62,7 @@ $.playerCustomizing = function(m){
 var PlayerCustomizing = function(content, m){
     // 전역적으로 사용하기 위한 변수
 	this.opt = $.extend({}, $.fn.playerCustomizing.default, m || {}); // 옵션
+    this.playCount = 0; // 플레이 리스트 카운터
 
     var that = this
 	, videoForm = this.videoUiCreate(content, m) // 비디오 UI 생성
@@ -92,6 +93,12 @@ var PlayerCustomizing = function(content, m){
 	// 전역적으로 사용하기 위한 변수(시간 요소)
 	this.timeCurrent = 0;
 	this.timeDuration = 0;
+
+    // 초기 파일 적용
+    $(this.videoForm).attr({ "autoplay" : this.opt.autoplayUse });
+    $(this.videoForm).find("source").attr({ src : this.opt.playList[this.playCount].src, type : this.opt.playList[this.playCount].type });
+    // 초기 파일 로드
+    this.videoForm.load();
 
     // 로딩 시작
 	$(this.videoForm).off("seeking");
@@ -138,7 +145,17 @@ PlayerCustomizing.prototype = {
 	// 초기 작업
 	initAction : function(m){
         var that = this
-		, eleContent = m.wrap;
+		, eleContent = m.wrap
+		, timer = null
+		, touchtime = null
+		, dbEventTime = null
+		, currentVolume = this.opt.volumeUse
+		, evtMoveFlag = false;
+
+        // 초기 볼륨 적용
+		this.videoForm.volume = this.opt.volumeUse;
+		// 초기 볼륨 UI 적용
+		that.volumeSetup({ cutX : this.opt.volumeUse*100, totalX : this.volumeProgBar.outerWidth() });
 
         // 비디오 전체영역 클릭
 		$(this.videoForm).on("click", function(e){
@@ -380,6 +397,94 @@ PlayerCustomizing.prototype = {
 			that.videoForm.currentTime = that.videoForm.currentTime + that.opt.overTimeUse;
 
 			return false;
+		});
+
+        // 볼륨 버튼
+		this.volumeButton.on("click", function(e){
+            // 기본링크 기능삭제
+			e.preventDefault();
+
+			if( that.videoForm.volume != 0 ){
+				that.videoForm.volume = 0;
+
+				that.volumeSetup({ cutX : 0, totalX : that.volumeProgBar.outerWidth() });
+			} else {
+				that.videoForm.volume = currentVolume;
+
+				that.volumeSetup({ cutX : currentVolume*100, totalX : that.volumeProgBar.outerWidth() });
+			}
+		});
+		this.volumePanel.on("mouseenter", function(e){
+			$(this).addClass("py_volume_panel_enter");
+
+			evtMoveFlag = false;
+		});
+		this.volumePanel.on("mouseleave", function(e){
+			if( !evtMoveFlag ){
+				$(this).removeClass("py_volume_panel_enter");
+			}
+		});
+        // 불륨 상태바
+		this.volumeProgBar.on("mousedown", function(e){
+            // 기본링크 기능삭제
+			e.preventDefault();
+
+			var posX = e.pageX
+			, progress = that.volumeProgBar.find(".py_volume_level_icon")
+			, progressBarWidth = that.volumeProgBar.outerWidth()
+			, blankX = that.volumeProgBar.offset().left
+			, wnPosX = null;
+
+			setTimeout(() => {
+				// 상태바 영역에서 값 추출
+				if( posX >= blankX && posX <= blankX + progressBarWidth ){
+					that.volumeSetup({ cutX : posX - blankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" });
+				}
+			}, 10);
+
+			// 전체 마우스무브
+			$(window).on("mousemove", function(e){
+				wnPosX = e.pageX;
+				wnPosY = e.pageY;
+
+				// 상태바 영역에서 값 추출
+				if( wnPosX >= blankX && wnPosX <= progressBarWidth + blankX ){
+					that.volumeSetup({ cutX : wnPosX - blankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" });
+				} else if( wnPosX < blankX ){
+					that.volumeSetup({ cutX : 0, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" });
+				} else if( wnPosX > $(eleContent).width() - blankX ){
+					that.volumeSetup({ cutX : progressBarWidth, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" });
+				}
+
+				if( !evtMoveFlag ){
+					evtMoveFlag = true;
+				}
+			});
+
+			// 마우스 업
+			$(window).on("mouseup", function(e){
+				var pageX = e.pageX
+				, pageY = e.pageY
+
+				currentVolume = Number(progress.outerWidth()/100).toFixed(1);
+
+				// 볼률바가 활성화 되어있을경우 숨김
+				if( pageX >= that.volumePanel.offset().left &&
+					pageX <= that.volumePanel.offset().left + that.volumePanel.outerWidth() &&
+					pageY >= that.volumePanel.offset().top &&
+					pageY <= that.volumePanel.offset().top + that.volumePanel.outerHeight()
+				){
+					evtMoveFlag = false;
+				} else {
+					if( that.volumePanel.hasClass("py_volume_panel_enter") && evtMoveFlag ){
+						that.volumePanel.removeClass("py_volume_panel_enter");
+					}
+				}
+
+				// 이벤트 삭제
+				$(window).off("mousemove");
+				$(window).off("mouseup");
+			});
 		});
 
         // 전체보기 버튼 클릭
@@ -783,6 +888,75 @@ PlayerCustomizing.prototype = {
 
 		return $video[0];
 	},
+    // volume 생성
+	volumeUiCreate : function(){
+		var $volumeLayer = $("<div />").addClass("volume_layer")
+			.append( $("<span />") );
+
+		return $volumeLayer;
+	},
+    // 전체 화면 보기
+	fullSizeFlag : function(m){
+		var node = $(m.content);
+
+		if( !node.hasClass("py_fullsize_active") ){
+			var requestMethod = document.body.requestFullScreen || document.body.webkitRequestFullScreen || document.body.mozRequestFullScreen || document.body.msRequestFullscreen;
+
+			node.addClass("py_fullsize_active");
+
+            if ( requestMethod ) { // Native full screen.
+                requestMethod.call(document.body);
+            } else if (typeof window.ActiveXObject !== "undefined") { // Older IE.
+                var wscript = new ActiveXObject("WScript.Shell");
+                if (wscript !== null) {
+                    wscript.SendKeys("{F11}");
+                }
+            }
+		} else {
+			var requestMethod = document.cancelFullScreen||document.webkitCancelFullScreen||document.mozCancelFullScreen||document.exitFullscreen;
+
+			node.removeClass("py_fullsize_active");
+
+			if (requestMethod) { // cancel full screen.
+				requestMethod.call(document);
+			} else if (typeof window.ActiveXObject !== "undefined") { // Older IE.
+				var wscript = new ActiveXObject("WScript.Shell");
+				if (wscript !== null) {
+					wscript.SendKeys("{F11}");
+				}
+			}
+		}
+	},
+    // 볼륨 조절
+	volumeSetup : function(m){
+		var progress = this.volumeProgBar.find(".py_volume_level_icon")
+		, cutX = m.cutX
+		, totX = m.totalX
+		, pgBar = m.progBar
+		, types = ( m.type ) ? m.type : "percent"
+		, wnWidthPs = parseFloat(this.percentValue({ currentX : cutX, totalX : totX }))
+
+		// 이동할 프로그래스바
+		progress.css({ width : this.percentValue({ currentX : cutX, totalX : totX, progBar : pgBar, type : types }) });
+
+		// 볼륨 조절
+		this.videoForm.volume = wnWidthPs/100;
+
+		// 클래스 적용(아이콘 적용)
+		if( wnWidthPs == 0 ){
+			// 아이콘 변경
+			this.volumeButton.attr({ class : "py_mute_control py_mute_control_process0" });
+		} else if( wnWidthPs > 0 && wnWidthPs <= 33 ){
+			// 아이콘 변경
+			this.volumeButton.attr({ class : "py_mute_control py_mute_control_process1" });
+		} else if( wnWidthPs > 33 && wnWidthPs <= 66 ){
+			// 아이콘 변경
+			this.volumeButton.attr({ class : "py_mute_control py_mute_control_process2" });
+		} else {
+			// 아이콘 변경
+			this.volumeButton.attr({ class : "py_mute_control py_mute_control_process3" });
+		}
+	},
     // 컨트롤박스 활성화 여부
 	userControlFlag : function(m){
 		var controlTimer = setTimeout(() => {
@@ -797,6 +971,51 @@ PlayerCustomizing.prototype = {
 			.appendTo( $(m.cont) );
 
 		return $spinner;
+	},
+    // 시계 계산
+	timeCalculate : function(count){
+	    var numCount = parseInt(count, 10)
+	    , hours = Math.floor(numCount / 3600)
+	    , minutes = Math.floor((numCount - (hours * 3600)) / 60)
+	    , seconds = numCount - (hours * 3600) - (minutes * 60)
+		, total = null;
+
+		// 한자리일경우 앞에 0을 추가
+	    if( minutes < 10 ){
+			minutes = "0" + minutes;
+		}
+	    if( seconds < 10 ){
+			seconds = "0" + seconds;
+		}
+
+		// 시간에 시간이 없을경우 삭제
+		if( hours ){
+			total = hours + ':' + minutes + ':' + seconds;
+		} else {
+			total = minutes + ':' + seconds;
+		}
+
+	    return total;
+	},
+    // 퍼센트 계산
+	percentValue : function(m){
+		var currentX = m.currentX
+		, totalX = m.totalX
+		, progWidth = m.progBar
+		, type = ( m.type ) ? m.type : "percent"
+		, total = 0;
+
+		if( type == "percent" ){
+			total = (currentX / totalX) * 100;
+
+			total = Math.floor( total ) + "%";
+		} else {
+			total = (currentX / totalX) * progWidth
+
+			total = total;
+		}
+
+		return total;
 	},
     // 데이터 전송
 	postDataSend : function(m){
@@ -820,6 +1039,35 @@ PlayerCustomizing.prototype = {
 				console.log(error);
 			}
 		});*/
+	},
+    // Device 체크(웹 또는 모바일)
+	deviceVersionCheck : function(){
+		//모바일 Device종류(윈도우 폰은 앞으로 나오지 않기 때문에 빼도 무방하나 아직 쓰는 사람이 존재하기에..)
+        var mobileFlag = /Mobile|iP(hone|od)|Windows (CE|Phone)|Minimo|Opera M(obi|ini)|BlackBerry|Nokia/
+		, result = null;
+
+        //모바일일경우
+        if (navigator.userAgent.match(mobileFlag) && !navigator.userAgent.match(/iPad/)) {
+            result = "mobile";
+        } else if (navigator.userAgent.match(/iPad|Android/)) { // 모바일 Device와 Android가 포함이 안되어 있을 경우
+            result = "tablet";
+        } else { //그 외의 경우 모두 PC
+            result = "PC(Mobile, Tablet 외)";
+        }
+
+		return result;
+	},
+	// Device 체크(사이즈 기준)
+	deviceSizeCheck : function(){
+		var result = null;
+
+        if( window.innerWidth < 800 ){
+            result = "mobile";
+        } else {
+            result = "web";
+        }
+
+        return result;
 	},
 }
 // 옵션

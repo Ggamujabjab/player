@@ -131,7 +131,17 @@ var PlayerCustomizing = function(content, m){
     // video 재생시간이 변화가 있을경우 실행
 	$(this.videoForm).off("timeupdate");
 	$(this.videoForm).on("timeupdate", function(){
-		
+		that.timeCurrent = this.currentTime;
+		that.timeDuration = this.duration ? this.duration : 0;
+
+		// 현재, 최종시간 설정
+		if( !isNaN(that.timeCurrent) && !isNaN(that.timeDuration) ){
+			that.progCurrentTime.text( that.timeCalculate(that.timeCurrent) );
+			that.progDurationTime.text( that.timeCalculate(that.timeDuration) );
+		}
+
+		// 현재 시간을 기준으로 하단 프로그래스바 이동
+		that.progressBar.find(".py_play_progress").css({ width : that.percentValue({ currentX : that.timeCurrent, totalX : that.timeDuration, progBar : that.progressBar.outerWidth(), type : "px" }) });
 	});
 
     // video 재생이 완료됐을경우
@@ -146,6 +156,7 @@ PlayerCustomizing.prototype = {
 	initAction : function(m){
         var that = this
 		, eleContent = m.wrap
+		, tooltipActiveFlag = null
 		, timer = null
 		, touchtime = null
 		, dbEventTime = null
@@ -156,6 +167,21 @@ PlayerCustomizing.prototype = {
 		this.videoForm.volume = this.opt.volumeUse;
 		// 초기 볼륨 UI 적용
 		that.volumeSetup({ cutX : this.opt.volumeUse*100, totalX : this.volumeProgBar.outerWidth() });
+
+		// 썸네일 이미지 추가
+		if( this.opt.playList[this.playCount].sumImg ){
+			// 기존 이미지가 있을경우 삭제
+			if( this.progressBar.find(".py_tooltip").find("img").length ){
+				this.progressBar.find(".py_tooltip").find("img").remove();
+			}
+
+			this.progressBar.find(".py_tooltip")
+				.prepend(
+					$("<img />", { src : this.opt.playList[this.playCount].timeSumImg, alt : "" })
+				);
+
+			tooltipActiveFlag = true;
+		}
 
         // 비디오 전체영역 클릭
 		$(this.videoForm).on("click", function(e){
@@ -399,6 +425,190 @@ PlayerCustomizing.prototype = {
 			return false;
 		});
 
+        // 상태바 마우스다운
+		this.progressBar.on("mousedown", function(e){
+			e.preventDefault();
+
+			var posX = ( $(eleContent).offset().left == 0 ) ? e.pageX : e.pageX - $(eleContent).offset().left
+			, progress = that.progressBar.find(".py_play_progress")
+			, progressBarWidth = that.progressBar.outerWidth()
+			, progressBarHeight = that.progressBar.outerHeight()
+			, tooltip = progress.find(".py_tooltip")
+			, tooltipImg = tooltip.find("img")
+			, blankX = ($(eleContent).width() - progressBarWidth) / 2
+			, initProgPos = that.percentValue({ currentX : posX - blankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" })
+			, wnPosX = null
+			, pageTotalX = posX - Math.floor(($(eleContent).width() - progressBarWidth) / 2)
+			, tooltipImgWidth = null
+			, tooltipImgHeight = null
+			, progSpace = null
+			, progResultX = null;
+
+			// 재생중이였을때
+			if( $(eleContent).hasClass("py_playing") ){
+				// 정지
+				that.videoForm.pause();
+
+				// 타이머가 존재할경우
+				if( timer ){
+					clearTimeout( timer );
+				}
+			}
+
+			setTimeout(() => {
+				// 툴팁 활성화
+				if( tooltipActiveFlag ){
+					tooltip.addClass("py_tooltip_active").show();
+				} else {
+					tooltip.show();
+				}
+
+				tooltipImgWidth = tooltipImg.outerWidth()/160;
+				tooltipImgHeight = tooltipImg.outerHeight()/90;
+				progSpace = progressBarWidth/(tooltipImgWidth*tooltipImgHeight);
+				progResultX = Math.floor(pageTotalX/progSpace);
+
+				// 상태바 영역에서 값 추출
+				if( posX >= blankX && posX <= $(eleContent).width() - blankX ){
+					progress.css({ width : that.percentValue({ currentX : posX - blankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" }) });
+
+					// 툴팁 활성화
+					if( tooltipActiveFlag ){
+						tooltipActive({
+							curtX : posX - blankX,
+							imgFlag : "center",
+							imgTop : -(tooltip.height() * Math.floor(progResultX/tooltipImgWidth)),
+							imgLeft : -(tooltip.width() * (progResultX%tooltipImgWidth)),
+							resultX : progResultX
+						});
+
+                        // 툴팁 시간
+            			tooltip.find(".py_tooltip_time").text( that.timeCalculate(initProgPos * (that.timeDuration/progressBarWidth)) ? that.timeCalculate(initProgPos * (that.timeDuration/progressBarWidth)) : that.timeCalculate(0) );
+					}
+				}
+
+				// 상태바 오버 이벤트 기능 삭제
+				that.progressBar.off("mouseenter");
+				that.progressBar.off("mousemove");
+				that.progressBar.off("mouseleave");
+			});
+
+			// 전체 마우스무브
+			$(window).on("mousemove", function(e){
+				wnPosX = ( $(eleContent).offset().left == 0 ) ? e.pageX : e.pageX - $(eleContent).offset().left;
+				wnPosY = ( $(eleContent).offset().top == 0 ) ? e.pageY : e.pageY - $(eleContent).offset().top;
+				pageTotalX = wnPosX - Math.floor(($(eleContent).width() - progressBarWidth) / 2);
+				progResultX = Math.floor(pageTotalX/progSpace);
+
+				var wnBlankX = ($(eleContent).width() - progressBarWidth) / 2
+				, wnBlankY = $(eleContent).height() - progressBarHeight
+				, wnResultBlankY = wnBlankY + progressBarHeight
+				, wnProgPos = that.percentValue({ currentX : wnPosX - wnBlankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" });
+
+				// 상태바 영역에서 값 추출
+				if( wnPosX >= blankX && wnPosX <= $(eleContent).width() - wnBlankX ){
+					// 이동할 프로그래스바
+					progress.css({ width : that.percentValue({ currentX : wnPosX - wnBlankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" }) });
+
+					// 현재 시간 재적용
+					that.progCurrentTime.text( that.timeCalculate(wnProgPos * (that.timeDuration/progressBarWidth)) );
+                    // 툴팁 시간
+                    tooltip.find(".py_tooltip_time").text( that.timeCalculate(wnProgPos * (that.timeDuration/progressBarWidth)) ? that.timeCalculate(wnProgPos * (that.timeDuration/progressBarWidth)) : that.timeCalculate(0) );
+
+					if( wnPosX >= tooltip.outerWidth()/2 && wnPosX < $(eleContent).width() - tooltip.outerWidth()/2 ){
+						// 툴팁 활성화
+						if( tooltipActiveFlag ){
+							tooltipActive({
+								curtX : wnPosX - wnBlankX,
+								imgFlag : "center",
+								imgTop : -(tooltip.height() * Math.floor(progResultX/tooltipImgWidth)),
+								imgLeft : -(tooltip.width() * (progResultX%tooltipImgWidth)),
+								resultX : progResultX
+							});
+						}
+					}
+				} else if( wnPosX < blankX ){
+					// 이동할 프로그래스바
+					progress.css({ width : 0 });
+
+					// 현재 시간 재적용
+					that.progCurrentTime.text( that.timeCalculate(0) );
+                    // 툴팁 시간
+                    tooltip.find(".py_tooltip_time").text( that.timeCalculate(0) );
+
+					// 툴팁 활성화
+					if( tooltipActiveFlag ){
+						tooltipActive({
+							curtX : 0,
+							imgFlag : "first",
+							imgTop : 0,
+							imgLeft : 0
+						});
+					}
+				} else if( wnPosX > $(eleContent).width() - wnBlankX ){
+					// 이동할 프로그래스바
+					progress.css({ width : progressBarWidth });
+
+					// 현재 시간 재적용
+					that.progCurrentTime.text( that.timeCalculate(that.timeDuration) );
+                    // 툴팁 시간
+                    tooltip.find(".py_tooltip_time").text( that.timeCalculate(that.timeDuration) ? that.timeCalculate(that.timeDuration) : that.timeCalculate(0));
+
+					// 툴팁 활성화
+					if( tooltipActiveFlag ){
+						tooltipActive({
+							curtX : progressBarWidth,
+							imgFlag : "last",
+							imgTop : -(tooltip.height() * (tooltipImgWidth+1)),
+							imgLeft : -(tooltip.width() * (tooltipImgWidth-1))
+						});
+					}
+				}
+			});
+
+			// 마우스 업
+			$(window).on("mouseup", function(e){
+				var upPosX = (wnPosX) ? wnPosX : posX
+				, wnBlankX = ($(eleContent).width() - that.progressBar.outerWidth()) / 2
+				, wnProgBarWidth = that.progressBar.outerWidth()
+				, wnProgPos = that.percentValue({ currentX : upPosX - wnBlankX, totalX : wnProgBarWidth, progBar : wnProgBarWidth, type : "px" });
+
+				// 재생중일경우 체크
+				if( $(eleContent).hasClass("py_playing") ){
+					// 재생
+					that.videoForm.play();
+				}
+
+				// 현재 재생시간 설정
+				if( upPosX < blankX ){
+					that.videoForm.currentTime = 0;
+				} else if( upPosX > $(eleContent).width() - wnBlankX ) {
+					that.videoForm.currentTime = that.timeDuration;
+				} else {
+					that.videoForm.currentTime = Math.abs(wnProgPos * (that.timeDuration/wnProgBarWidth));
+				}
+
+				// 툴팁 활성화
+				if( tooltipActiveFlag ){
+					tooltip.removeClass("py_tooltip_active").hide();
+				} else {
+					tooltip.hide();
+				}
+
+				// 이벤트 삭제
+				$(window).off("mousemove");
+				$(window).off("mouseup");
+
+				// 상태바 오버 이벤트 기능 실행
+				stateBarEvtOver();
+			});
+
+			return false;
+		});
+
+		// 상태바 오버 이벤트 기능 실행
+		stateBarEvtOver();
+
         // 볼륨 버튼
 		this.volumeButton.on("click", function(e){
             // 기본링크 기능삭제
@@ -554,6 +764,147 @@ PlayerCustomizing.prototype = {
                 }
             }
         }
+
+        // 상태바 오버 이벤트 기능
+		function stateBarEvtOver(){
+			// 상태바 마우스오버
+			that.progressBar.on("mouseenter", function(e){
+				var posX = ( $(eleContent).offset().left == 0 ) ? e.pageX : e.pageX - $(eleContent).offset().left
+				, progress = that.progressBar.find(".py_play_progress")
+				, progressBarWidth = that.progressBar.outerWidth()
+				, tooltip = progress.find(".py_tooltip")
+				, tooltipImg = tooltip.find("img")
+				, blankX = ($(eleContent).width() - progressBarWidth) / 2
+				, initProgPos = that.percentValue({ currentX : posX - blankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" })
+				, pageTotalX = posX - Math.floor(($(eleContent).width() - progressBarWidth) / 2)
+				, tooltipImgWidth = null
+				, tooltipImgHeight = null
+				, progSpace = null
+				, progResultX = null;
+
+                // 클래스 추가
+                $(this).addClass("py_progress_bar_active");
+
+				// 툴팁 활성화
+				if( tooltipActiveFlag ){
+					tooltip.addClass("py_tooltip_active").show();
+				} else {
+					tooltip.show();
+				}
+
+				tooltipImgWidth = tooltipImg.outerWidth()/160;
+				tooltipImgHeight = tooltipImg.outerHeight()/90;
+				progSpace = progressBarWidth/(tooltipImgWidth*tooltipImgHeight);
+				progResultX = Math.floor(pageTotalX/progSpace);
+
+				// 상태바 영역에서 값 추출
+				if( posX >= blankX && posX <= $(eleContent).width() - blankX ){
+					// 툴팁 활성화
+					if( tooltipActiveFlag ){
+						tooltipActive({
+							curtX : posX - blankX,
+							//time : that.timeCalculate(initProgPos * (that.timeDuration/progressBarWidth)),
+							imgFlag : "center",
+							imgTop : -(tooltip.height() * Math.floor(progResultX/tooltipImgWidth)),
+							imgLeft : -(tooltip.width() * (progResultX%tooltipImgWidth)),
+							resultX : progResultX
+						});
+					}
+
+                    // 툴팁 시간
+                    tooltip.find(".py_tooltip_time").text( that.timeCalculate(initProgPos * (that.timeDuration/progressBarWidth)) ? that.timeCalculate(initProgPos * (that.timeDuration/progressBarWidth)) : that.timeCalculate(0) );
+				}
+			});
+
+			// 상태바 마우스무브
+			that.progressBar.on("mousemove", function(e){
+				var wnPosX = ( $(eleContent).offset().left == 0 ) ? e.pageX : e.pageX - $(eleContent).offset().left
+				, progress = that.progressBar.find(".py_play_progress")
+				, progressBarWidth = that.progressBar.outerWidth()
+				, wnBlankX = ($(eleContent).width() - progressBarWidth) / 2
+				, wnProgPos = that.percentValue({ currentX : wnPosX - wnBlankX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" })
+				, tooltip = progress.find(".py_tooltip")
+				, tooltipImg = tooltip.find("img");
+
+                // 툴팁이 display:none 되어있을경우
+				if( tooltip.css("display") == "none" ){
+					tooltip.show();
+				}
+
+				var tooltipImgWidth = tooltipImg.outerWidth()/160
+				, tooltipImgHeight = tooltipImg.outerHeight()/90
+				, progSpace = progressBarWidth/(tooltipImgWidth*tooltipImgHeight)
+				, pageTotalX = wnPosX - Math.floor(($(eleContent).width() - progressBarWidth) / 2)
+				, progResultX = Math.floor(pageTotalX/progSpace);
+
+                // 프로그래스바 영역
+				if( wnPosX >= wnBlankX && wnPosX <= $(eleContent).width() - wnBlankX ){
+					// 툴팁 활성화
+					if( tooltipActiveFlag ){
+						tooltipActive({
+							curtX : wnPosX - wnBlankX,
+							imgFlag : "center",
+							imgTop : -(tooltip.height() * Math.floor(progResultX/tooltipImgWidth)),
+							imgLeft : -(tooltip.width() * (progResultX%tooltipImgWidth)),
+							resultX : progResultX
+						});
+					}
+
+                    // 툴팁 시간
+                    tooltip.find(".py_tooltip_time").text( that.timeCalculate(wnProgPos * (that.timeDuration/progressBarWidth)) ? that.timeCalculate(wnProgPos * (that.timeDuration/progressBarWidth)) : that.timeCalculate(0) );
+				}
+			});
+
+			// 상태바 마우스아웃
+			that.progressBar.on("mouseleave", function(e){
+                // 클래스 추가
+                $(this).removeClass("py_progress_bar_active");
+
+				// 툴팁 활성화
+				if( tooltipActiveFlag ){
+					var progress = that.progressBar.find(".py_play_progress")
+					, tooltip = progress.find(".py_tooltip");
+
+					tooltip.removeClass("py_tooltip_active").hide();
+				}
+			});
+		}
+
+        // Tootip
+		function tooltipActive(m){
+			var currentX = m.curtX
+			, tooltipImgFlag = m.imgFlag
+			, tooltipImgTop = m.imgTop
+			, tooltipImgLeft = m.imgLeft
+			, tooltipCourse = m.resultX
+			, progress = that.progressBar.find(".py_play_progress")
+			, progressBarWidth = that.progressBar.outerWidth()
+			, tooltip = progress.find(".py_tooltip")
+			, tooltipImg = tooltip.find("img")
+			, tooltipImgWidth = tooltipImg.outerWidth()/160
+			, tooltipImgHeight = tooltipImg.outerHeight()/90
+			, tooltipPosX = that.percentValue({ currentX : currentX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" }) - (tooltip.outerWidth()/2);
+
+			// 툴팁 위치
+			if( tooltipPosX < 0 ){
+				tooltip.css({ left : 0 });
+			} else if( tooltipPosX > progressBarWidth - tooltip.outerWidth() ){
+				tooltip.css({ left : progressBarWidth - tooltip.outerWidth() });
+			} else {
+				tooltip.css({ left : that.percentValue({ currentX : currentX, totalX : progressBarWidth, progBar : progressBarWidth, type : "px" }) - (tooltip.outerWidth()/2) })
+			}
+
+			// 툴팁 이미지 위치
+			if( tooltipImgFlag == "center" ){
+				if( tooltipCourse < tooltipImgWidth*tooltipImgHeight ){
+					tooltipImg.css({ margin : tooltipImgTop + "px 0 0 " + tooltipImgLeft + "px " });
+				}
+			} else if( tooltipImgFlag == "first" ){
+				tooltipImg.css({ margin : "0 0 0 0" });
+			} else if( tooltipImgFlag == "last" ){
+				tooltipImg.css({ margin : -(tooltip.height() * (tooltipImgWidth+1)) + "px 0 0 " + -(tooltip.width() * (tooltipImgWidth-1)) + "px " });
+			}
+		}
     },
     // video 생성
 	videoUiCreate : function(content, m){
@@ -607,12 +958,6 @@ PlayerCustomizing.prototype = {
 								$("<div />").addClass("py_progress_bar_box")
 									.append(
 										$("<div />").addClass("py_play_progress")
-											.append(
-												$("<div />").addClass("py_tooltip")
-													.append(
-														$("<span />").addClass("py_tooltip_time").text("00:00")
-													)
-											)
 									)
 							)
 					)

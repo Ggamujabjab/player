@@ -100,6 +100,9 @@ var PlayerCustomizing = function(content, m){
     // 초기 파일 로드
     this.videoForm.load();
 
+	// 리스트 목록 높이 적용
+	this.seriesList.find(".py_series_scroll").css({ height : this.seriesList.find(".py_series_list_in").height() - this.title.height() });
+
     // 로딩 시작
 	$(this.videoForm).off("seeking");
 	$(this.videoForm).on("seeking", function(){
@@ -117,6 +120,9 @@ var PlayerCustomizing = function(content, m){
 	$(this.videoForm).on("loadedmetadata", function(){
 		// 타이틀 적용
 		that.title.text( that.opt.playList[that.playCount].title );
+
+		// 초기 활성화 시간
+		this.currentTime = that.opt.playList[that.playCount].cTime;
 
 		// 비디오 로드후 초기작업
 		that.initAction({ wrap : content });
@@ -142,6 +148,12 @@ var PlayerCustomizing = function(content, m){
 
 		// 현재 시간을 기준으로 하단 프로그래스바 이동
 		that.progressBar.find(".py_play_progress").css({ width : that.percentValue({ currentX : that.timeCurrent, totalX : that.timeDuration, progBar : that.progressBar.outerWidth(), type : "px" }) });
+
+		// 리스트 목록 활성화 컨트럴
+		if( that.opt.playList.length > 1 ){
+			that.seriesList.find(".seekbar span").eq(that.playCount).css({ width : that.percentValue({ currentX : that.timeCurrent, totalX : that.timeDuration, progBar : that.seriesList.find(".seekbar").outerWidth(), type : "px" }) });
+			that.seriesList.find(".current_time").eq(that.playCount).text( that.timeCalculate(that.timeCurrent) );
+		}
 	});
 
     // video 재생이 완료됐을경우
@@ -181,6 +193,12 @@ PlayerCustomizing.prototype = {
 				);
 
 			tooltipActiveFlag = true;
+		}
+
+		// 리스트 목록 활성화
+		if( this.opt.playList.length > 1 ){
+			this.seriesList.find("li").removeClass("active");
+			this.seriesList.find("li").eq(this.playCount).addClass("active");
 		}
 
         // 비디오 전체영역 클릭
@@ -392,6 +410,9 @@ PlayerCustomizing.prototype = {
 				if( timer ){
 					clearTimeout( timer );
 				}
+			} else {
+				// 정지
+				that.videoForm.pause();
 			}
 
 			$(this).addClass("py_prev_control_active");
@@ -412,6 +433,9 @@ PlayerCustomizing.prototype = {
 				if( timer ){
 					clearTimeout( timer );
 				}
+			} else {
+				// 정지
+				that.videoForm.pause();
 			}
 
 			$(this).addClass("py_next_control_active");
@@ -697,6 +721,73 @@ PlayerCustomizing.prototype = {
 			});
 		});
 
+		// 리스트목록 버튼 클릭
+		this.btnListseries.on("click", function(){
+			// 타이머가 존재할경우
+			if( $(eleContent).hasClass("py_playing") ){
+				if( timer ){
+					clearTimeout( timer );
+				}
+			}
+
+			that.seriesList.addClass("py_series_list_active");
+		});
+
+		// 리스트목록
+		if( this.seriesList.length ){
+            // 리스트목록 마우스오버
+            this.seriesList.on("mouseenter", function(){
+                if( $(eleContent).hasClass("py_playing") ){
+    				// 전체 컨트럴러 사라짐 타이머
+    				if( timer ){
+    					clearTimeout( timer );
+    				}
+    			}
+            });
+			// 리스트목록 클릭
+			this.seriesList.find(".py_series_scroll a").on("click", function(){
+				// 현재 Index 번호
+				var index = that.seriesList.find(".py_series_scroll a").index(this);
+
+				// 이벤트 초기화
+				that.destroy();
+
+				// 리스트목록 비활성화
+				that.seriesList.removeClass("py_series_list_active");
+				// 전체 컨트럴러 활성화
+				if( $(eleContent).hasClass("py_playing") ){
+					if( timer ){
+						clearTimeout( timer );
+					}
+				}
+
+				// 현재 시간 저장
+				that.opt.playList[that.playCount].cTime = that.videoForm.currentTime;
+
+				// 현재 리스트 활성화 번호 저장
+				that.playCount = index;
+
+				// 숨김
+				that.layerPlay.addClass("py_btn_playing_hide");
+
+				// 플레이어 실행
+				$(that.videoForm).find("source").attr({ src : that.opt.playList[that.playCount].src, type : that.opt.playList[that.playCount].type });
+				that.videoForm.load();
+			});
+
+			// 리스트목록 닫기 버튼
+			this.seriesList.find(".close a").on("click", function(){
+				that.seriesList.removeClass("py_series_list_active");
+
+				// 전체 컨트럴러 활성화
+				if( $(eleContent).hasClass("py_playing") ){
+					timer = that.userControlFlag({ wrap : eleContent });
+				}
+
+				return false;
+			});
+		}
+
         // 전체보기 버튼 클릭
 		this.btnFullscreen.on("click", function(){
 			// 전체 컨트럴러 활성화
@@ -746,6 +837,12 @@ PlayerCustomizing.prototype = {
 				that.btnFullscreen.trigger("click");
             }
 		});
+
+		// 리사이즈 이벤트
+        $(window).resize(function(){
+            // 리스트 목록 높이 적용
+        	that.seriesList.find(".py_series_scroll").css({ height : that.seriesList.find(".py_series_list_in").height() - that.title.height() });
+        });
 
         // 전체보기 ESC키 인식 이벤트
         function evtFullEsc(){
@@ -1096,7 +1193,7 @@ PlayerCustomizing.prototype = {
 														)
 														.append( " / " )
 														.append(
-															$("<span />").addClass("last_time").text( this.opt.playList[i].lTime )
+															$("<span />").addClass("last_time").text( this.timeCalculate(this.opt.playList[i].lTime) )
 														)
 												)
 										)
@@ -1414,6 +1511,35 @@ PlayerCustomizing.prototype = {
 
         return result;
 	},
+	// 이벤트 초기화
+	destroy : function(){
+		$(window).off("keyup");
+		$(this.videoForm).off("click");
+
+		this.controllBox.off("mouseleave");
+		this.btnPlay.off("click");
+		this.btnPrev.off("click");
+		this.btnNext.off("click");
+
+		this.progressBar.off("mousedown");
+		this.progressBar.off("mouseenter");
+		this.progressBar.off("mousemove");
+		this.progressBar.off("mouseleave");
+		this.progressBar.find(".py_tooltip").off("mouseleave");
+
+		this.volumeButton.off("click");
+		this.volumePanel.off("mouseenter");
+		this.volumePanel.off("mouseleave");
+
+		this.volumeProgBar.off("mousedown");
+
+		this.btnListnext.off("click");
+		this.btnListseries.off("click");
+		this.btnFullscreen.off("click");
+
+		this.seriesList.find(".py_series_scroll a").off("click");
+		this.seriesList.find(".close a").off("click");
+	}
 }
 // 옵션
 $.fn.playerCustomizing.default = {

@@ -94,11 +94,35 @@ var PlayerCustomizing = function(content, m){
 	this.timeCurrent = 0;
 	this.timeDuration = 0;
 
-    // 초기 파일 적용
-    $(this.videoForm).attr({ "autoplay" : this.opt.autoplayUse });
-    $(this.videoForm).find("source").attr({ src : this.opt.playList[this.playCount].src, type : this.opt.playList[this.playCount].type });
-    // 초기 파일 로드
-    this.videoForm.load();
+    // 광고 배너가 있을경우
+	if( this.opt.banner_movie ){
+		// 초기 파일 적용
+		$(this.videoForm).attr({ "autoplay" : this.opt.autoplayUse });
+		$(this.videoForm).find("source").attr({ src : this.opt.banner_movie.src, type : this.opt.banner_movie.type });
+
+		// 광고배너 스킵 레이어
+		var skipLayerBtn = this.bnnrUiCreate({ cont : content });
+
+		// 스킵 시간
+		var bnnrTimer = this.opt.banner_movie.times;
+        // 프로그래스바 컨트롤 막기
+		var bnnrFuncBlank = $("<div />").addClass("py_progress_blank")
+			.appendTo( this.progressBar.parent() );
+
+		// 주요기능 숨김(스킵할경우 숨길 요소)
+		this.title.hide();
+		this.btnPrev.hide();
+		this.btnNext.hide();
+		this.volumePanel.hide();
+		this.btnListnext.hide();
+		this.btnListseries.hide();
+	} else {
+		// 초기 파일 적용
+		$(this.videoForm).attr({ "autoplay" : this.opt.autoplayUse });
+		$(this.videoForm).find("source").attr({ src : this.opt.playList[this.playCount].src, type : this.opt.playList[this.playCount].type });
+	}
+	// 초기 파일 로드
+	this.videoForm.load();
 
 	// 리스트 목록 높이 적용
 	this.seriesList.find(".py_series_scroll").css({ height : this.seriesList.find(".py_series_list_in").height() - this.title.height() });
@@ -121,8 +145,18 @@ var PlayerCustomizing = function(content, m){
 		// 타이틀 적용
 		that.title.text( that.opt.playList[that.playCount].title );
 
-		// 초기 활성화 시간
-		this.currentTime = that.opt.playList[that.playCount].cTime;
+		if( that.opt.banner_movie ){
+			if( !bnnrFlag ){
+				// 초기 활성화 시간
+				this.currentTime = 0;
+			} else {
+				// 초기 활성화 시간
+				this.currentTime = that.opt.playList[that.playCount].cTime;
+			}
+		} else {
+			// 초기 활성화 시간
+			this.currentTime = that.opt.playList[that.playCount].cTime;
+		}
 
 		// 비디오 로드후 초기작업
 		that.initAction({ wrap : content });
@@ -149,6 +183,56 @@ var PlayerCustomizing = function(content, m){
 		// 현재 시간을 기준으로 하단 프로그래스바 이동
 		that.progressBar.find(".py_play_progress").css({ width : that.percentValue({ currentX : that.timeCurrent, totalX : that.timeDuration, progBar : that.progressBar.outerWidth(), type : "px" }) });
 
+		// 스킵 버튼 존재여부
+		if( !bnnrFlag ){
+			if( typeof bnnrTimer == "number" ){
+				if( bnnrTimer < Math.floor(this.currentTime) ){
+					skipLayerBtn.empty();
+					skipLayerBtn.append(
+						$("<button />", { type : "button" }).text("광고 건너뛰기")
+					);
+					skipLayerBtn.addClass("py_banner_layer_active");
+
+					// 스킵 버튼 클릭
+					skipLayerBtn.find("button").on("click", function(){
+						// 이벤트 초기화
+						that.destroy();
+
+						// 스킵 버튼 삭제
+						$(this).parent().remove();
+
+						// 프로그래스바 기능정지 레이어 삭제
+						bnnrFuncBlank.remove();
+
+						// 기능 버튼 활성화
+						that.title.show();
+						that.btnPrev.show();
+						that.btnNext.show();
+						that.btnListnext.show();
+						that.btnListseries.show();
+						// 볼륨 웹만 노출
+						if( that.deviceSizeCheck() === "web" ){
+							that.volumePanel.show();
+						}
+
+						// 플레이어 실행
+						$(that.videoForm).find("source").attr({ src : that.opt.playList[that.playCount].src, type : that.opt.playList[that.playCount].type });
+						that.videoForm.load();
+					});
+
+					bnnrFlag = true;
+				} else {
+					if( !isNaN(that.timeDuration) ){
+						$(".py_count").text( bnnrTimer - Math.floor(this.currentTime) );
+					}
+				}
+			} else {
+				if( !isNaN(that.timeDuration) ){
+					$(".py_count").text( Math.floor(that.timeDuration) - Math.floor(this.currentTime) );
+				}
+			}
+		}
+
 		// 리스트 목록 활성화 컨트럴
 		if( that.opt.playList.length > 1 ){
 			that.seriesList.find(".seekbar span").eq(that.playCount).css({ width : that.percentValue({ currentX : that.timeCurrent, totalX : that.timeDuration, progBar : that.seriesList.find(".seekbar").outerWidth(), type : "px" }) });
@@ -159,7 +243,66 @@ var PlayerCustomizing = function(content, m){
     // video 재생이 완료됐을경우
 	$(this.videoForm).off("ended");
 	$(this.videoForm).on("ended", function(){
-		
+		if( !that.opt.banner_movie ){
+			// 다음화가 있을경우 레이어 생성
+			if( !$completeLayer ){
+				$completeLayer = that.layerUiCreate({ cont : content });
+			}
+
+			// 레이어 세로 정렬
+			$completeLayer.css({ marginTop : ($(this).outerHeight()/2) - ($completeLayer.outerHeight()/2) })
+
+			// 활성화
+			$completeLayer.fadeIn();
+
+			// 확인
+			$completeLayer.find(".btn_confirm").off("click");
+			$completeLayer.find(".btn_confirm").on("click", function(){
+				// 레이어 닫기
+				$completeLayer.fadeOut();
+
+				// 이벤트 초기화
+				that.destroy();
+
+				// 현재 리스트 활성화 번호 저장
+				that.playCount = that.playCount + 1;
+
+				// 플레이어 실행
+				$(this).find("source").attr({ src : that.opt.playList[that.playCount].src, type : that.opt.playList[that.playCount].type });
+				this.load();
+			});
+
+			// 닫기
+			$completeLayer.find(".btn_cancel").off("click");
+			$completeLayer.find(".btn_cancel").on("click", function(){
+				// 레이어 닫기
+				$completeLayer.fadeOut();
+			});
+		} else {
+			// 이벤트 초기화
+			that.destroy();
+
+			// 스킵 버튼 삭제
+			skipLayerBtn.remove();
+
+			// 프로그래스바 기능정지 레이어 삭제
+			$(".py_progress_blank").remove();
+
+			// 기능 버튼 활성화
+			that.title.show();
+			that.btnPrev.show();
+			that.btnNext.show();
+			that.btnListnext.show();
+			that.btnListseries.show();
+			// 볼륨 웹만 노출
+			if( that.deviceSizeCheck() === "web" ){
+				that.volumePanel.show();
+			}
+
+			// 플레이어 실행
+			$(this).find("source").attr({ src : that.opt.playList[that.playCount].src, type : that.opt.playList[that.playCount].type });
+			this.load();
+		}
 	});
 }
 // 프로토타입
@@ -1336,6 +1479,17 @@ PlayerCustomizing.prototype = {
 			.append( $("<span />") );
 
 		return $volumeLayer;
+	},
+	// 광고배너 생성
+	bnnrUiCreate : function(m){
+		var $bnnrLayer = $("<div />").addClass("py_banner_layer")
+			.append(
+				$("<span />").addClass("py_count")
+			)
+			.append( "초 후 SKIP" )
+			.appendTo( $(m.cont) );
+
+		return $bnnrLayer;
 	},
     // 전체 화면 보기
 	fullSizeFlag : function(m){
